@@ -13,12 +13,7 @@ Daily AppleScript snippets, checked into this repo by an automated job.
 ```bash
 cd appleslop
 python3 scripts/generate_applescript.py --date 2026-02-14 --out applescripts/test.applescript
+./scripts/daily_apple_commit.sh
 ```
 
-Then run the shell script to verify end-to-end:
-
-```bash
-./scripts/daily_apple_commit.sh --dry-run
-```
-
-(The cron job calls the same script every morning.)
+The cron job calls the same shell script every morning.
