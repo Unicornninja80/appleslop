@@ -9,6 +9,8 @@ import random
 import textwrap
 from pathlib import Path
 
+from scripts.name_utils import funny_name
+
 TEMPLATES = [
     {
         "title": "Focus Playlist Booster",
@@ -16,6 +18,7 @@ TEMPLATES = [
             """
             -- Title: Focus Playlist Booster
             -- Generated on {date_str}
+            -- Codename: {codename}
             set targetPlaylist to "{playlist_name}"
             tell application "Music"
                 activate
@@ -36,6 +39,7 @@ TEMPLATES = [
             """
             -- Title: Reminder Sprint
             -- Generated on {date_str}
+            -- Codename: {codename}
             set reminderTitle to "{reminder_title}"
             set reminderNotes to "{reminder_note}"
             tell application "Reminders"
@@ -51,6 +55,7 @@ TEMPLATES = [
             """
             -- Title: Note Capsule
             -- Generated on {date_str}
+            -- Codename: {codename}
             set noteHeadline to "{note_headline}"
             set noteBody to "{note_body}"
             tell application "Notes"
@@ -67,6 +72,7 @@ TEMPLATES = [
             """
             -- Title: Desktop Snapshot
             -- Generated on {date_str}
+            -- Codename: {codename}
             set desktopPath to POSIX path of (path to desktop folder)
             set archiveFolder to desktopPath & "Snapshots"
             do shell script "mkdir -p '" & archiveFolder & "'"
@@ -83,6 +89,7 @@ TEMPLATES = [
             """
             -- Title: Window Layout Reset
             -- Generated on {date_str}
+            -- Codename: {codename}
             set windowBounds to {{ {left}, {top}, {right}, {bottom} }}
             tell application "Finder"
                 activate
@@ -135,8 +142,10 @@ def build_script(date: dt.date) -> str:
     seed = int(date.strftime("%Y%m%d"))
     random.seed(seed)
     template = random.choice(TEMPLATES)
+    codename = funny_name(seed)
     params = {
         "date_str": date.isoformat(),
+        "codename": codename,
         "playlist_name": random.choice(PLAYLISTS),
         "reminder_title": random.choice(REMINDER_TITLES),
         "reminder_note": random.choice(REMINDER_NOTES),
