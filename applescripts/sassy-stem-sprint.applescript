@@ -1,7 +1,8 @@
--- Title: Note Capsule
+-- Title: Notes Brain Dump
             -- Generated on 2026-02-14
-            set noteHeadline to "Debug diary"
-            set noteBody to "List one lesson learned from today."
+            -- Codename: Sassy Stem Sprint
+            set noteHeadline to "Meeting crumbs"
+            set noteBody to "List what should be delegated this week."
             tell application "Notes"
                 activate
                 set targetFolder to first folder whose name is "Notes"

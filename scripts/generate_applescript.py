@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a daily AppleScript file with some variety."""
+"""Generate a daily AppleScript file centered on Apple productivity workflows."""
 
 from __future__ import annotations
 
@@ -8,52 +8,80 @@ import datetime as dt
 import random
 import textwrap
 from pathlib import Path
+import sys
+
+CURRENT_DIR = Path(__file__).resolve().parent
+ROOT_DIR = CURRENT_DIR.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from scripts.name_utils import funny_name
 
 TEMPLATES = [
     {
-        "title": "Focus Playlist Booster",
+        "title": "Dark Mode Flip",
         "body": textwrap.dedent(
             """
-            -- Title: Focus Playlist Booster
+            -- Title: Dark Mode Flip
             -- Generated on {date_str}
             -- Codename: {codename}
-            set targetPlaylist to "{playlist_name}"
-            tell application "Music"
-                activate
-                if exists playlist targetPlaylist then
-                    set shuffle enabled to true
-                    set songRepeat to all
-                    play playlist targetPlaylist
-                else
-                    display dialog "Create a playlist called '" & targetPlaylist & "' for this automation to shine." buttons {"Noted"}
-                end if
+            tell application "System Events"
+                tell appearance preferences
+                    set dark mode to not dark mode
+                end tell
             end tell
+            display notification "Dark mode toggled." with title "{codename}"
             """
         ),
     },
     {
-        "title": "Reminder Sprint",
+        "title": "Audio Route Snap",
         "body": textwrap.dedent(
             """
-            -- Title: Reminder Sprint
+            -- Title: Audio Route Snap
+            -- Generated on {date_str}
+            -- Codename: {codename}
+            set targetDevice to "{audio_device}"
+            do shell script "SwitchAudioSource -s '" & targetDevice & "'" -- requires https://github.com/deweller/switchaudio-osx
+            display notification "Sound routed to " & targetDevice with title "{codename}"
+            """
+        ),
+    },
+    {
+        "title": "Display Resolution Dial",
+        "body": textwrap.dedent(
+            """
+            -- Title: Display Resolution Dial
+            -- Generated on {date_str}
+            -- Codename: {codename}
+            set targetResolution to "{resolution}"
+            do shell script "/usr/bin/defaults write /Library/Preferences/com.apple.windowserver DisplayResolutionEnabled -bool true"
+            display dialog "Switch to " & targetResolution & " via Display menu" buttons {"Done"}
+            """
+        ),
+    },
+    {
+        "title": "Reminders Momentum",
+        "body": textwrap.dedent(
+            """
+            -- Title: Reminders Momentum
             -- Generated on {date_str}
             -- Codename: {codename}
             set reminderTitle to "{reminder_title}"
             set reminderNotes to "{reminder_note}"
+            set dueDate to (current date) + ({offset_hours} * hours)
             tell application "Reminders"
                 activate
-                make new reminder with properties {{name:reminderTitle, body:reminderNotes, remind me date:(current date) + ({offset_hours} * hours)}}
+                make new reminder with properties {{name:reminderTitle, body:reminderNotes, remind me date:dueDate}}
             end tell
             """
         ),
     },
     {
-        "title": "Note Capsule",
+        "title": "Notes Brain Dump",
         "body": textwrap.dedent(
             """
-            -- Title: Note Capsule
+            -- Title: Notes Brain Dump
             -- Generated on {date_str}
             -- Codename: {codename}
             set noteHeadline to "{note_headline}"
@@ -67,74 +95,101 @@ TEMPLATES = [
         ),
     },
     {
-        "title": "Desktop Snapshot",
+        "title": "Drafts Lightning Shot",
         "body": textwrap.dedent(
             """
-            -- Title: Desktop Snapshot
+            -- Title: Drafts Lightning Shot
             -- Generated on {date_str}
             -- Codename: {codename}
-            set desktopPath to POSIX path of (path to desktop folder)
-            set archiveFolder to desktopPath & "Snapshots"
-            do shell script "mkdir -p '" & archiveFolder & "'"
-            set stamp to do shell script "date +%Y%m%d-%H%M%S"
-            set archiveFile to archiveFolder & "/Workspace-" & stamp & ".png"
-            do shell script "screencapture -x '" & archiveFile & "'"
-            display notification "Saved screenshot " & archiveFile with title "Desktop Snapshot"
-            """
-        ),
-    },
-    {
-        "title": "Window Layout Reset",
-        "body": textwrap.dedent(
-            """
-            -- Title: Window Layout Reset
-            -- Generated on {date_str}
-            -- Codename: {codename}
-            set windowBounds to {{ {left}, {top}, {right}, {bottom} }}
-            tell application "Finder"
+            set draftText to "{draft_prompt}" & "\n\n" & (do shell script "date")
+            tell application "Drafts"
                 activate
-                set bounds of front window to windowBounds
-                set current view of front window to list view
+                create draft with text draftText
             end tell
             """
         ),
     },
+    {
+        "title": "Finder Desktop Sweep",
+        "body": textwrap.dedent(
+            """
+            -- Title: Finder Desktop Sweep
+            -- Generated on {date_str}
+            -- Codename: {codename}
+            set archiveFolder to (path to documents folder as text) & "Sorted Desktop"
+            tell application "Finder"
+                if not (exists folder archiveFolder) then
+                    make new folder at (path to documents folder) with properties {{name:"Sorted Desktop"}}
+                end if
+                set desktopItems to every item of desktop
+                repeat with anItem in desktopItems
+                    move anItem to folder archiveFolder
+                end repeat
+            end tell
+            display notification "Desktop cleared to Sorted Desktop" with title "{codename}"
+            """
+        ),
+    },
+    {
+        "title": "Focus Status Toggle",
+        "body": textwrap.dedent(
+            """
+            -- Title: Focus Status Toggle
+            -- Generated on {date_str}
+            -- Codename: {codename}
+            do shell script "defaults -currentHost write com.apple.controlcenter 'NSStatusItem Visible DoNotDisturb' -bool true"
+            do shell script "launchctl stop com.apple.notificationcenterui && launchctl start com.apple.notificationcenterui"
+            display dialog "Focus mode nudged. Toggle via Control Center." buttons {"Nice"}
+            """
+        ),
+    },
 ]
 
-PLAYLISTS = [
-    "Morning Synth",
-    "Coffee Shop Logic",
-    "Deep Focus",
-    "Lo-Fi Momentum",
-    "Rev Up"
+AUDIO_DEVICES = [
+    "MacBook Pro Speakers",
+    "AirPods Pro",
+    "External Monitor",
+]
+
+RESOLUTIONS = [
+    "More Space",
+    "Default",
+    "Larger Text",
 ]
 
 REMINDER_TITLES = [
-    "Micro stretch break",
-    "Send quick gratitude note",
     "Inbox zero sprint",
-    "Hydration check",
+    "Mini review session",
+    "Call-back block",
+    "Hydration break",
 ]
 
 REMINDER_NOTES = [
-    "Two-minute reset: breathe in for 4, out for 6.",
-    "Ping a teammate with a thank-you.",
-    "Skim starred emails only—no rabbit holes.",
-    "Walk around while a stopwatch counts 120 seconds.",
+    "Process flagged emails only.",
+    "Brainstorm tomorrow's top 3 priorities.",
+    "Send status update to the team.",
+    "Fill out weekly highlights.",
 ]
 
 NOTE_HEADLINES = [
     "Idea fragments",
+    "Meeting crumbs",
     "Debug diary",
-    "Song sketches",
-    "Random sparks",
+    "Velocity log",
 ]
 
 NOTE_BODIES = [
-    "Capture three bullet points about whatever is top-of-mind.",
-    "List one lesson learned from today.",
-    "Brain-dump any lingering thoughts before sleep.",
-    "Imagine a headline describing your next win.",
+    "Capture three bullet points about what's buzzing.",
+    "List what should be delegated this week.",
+    "Write one win and one lesson learned.",
+    "Sketch the outline for a potential post.",
+]
+
+DRAFT_PROMPTS = [
+    "What is the quickest automation you could ship today?",
+    "Write a haiku about toggling dark mode.",
+    "Capture a rant about context switching.",
+    "List five shortcuts you rely on in Finder.",
 ]
 
 
@@ -146,16 +201,14 @@ def build_script(date: dt.date) -> str:
     params = {
         "date_str": date.isoformat(),
         "codename": codename,
-        "playlist_name": random.choice(PLAYLISTS),
+        "audio_device": random.choice(AUDIO_DEVICES),
+        "resolution": random.choice(RESOLUTIONS),
         "reminder_title": random.choice(REMINDER_TITLES),
         "reminder_note": random.choice(REMINDER_NOTES),
         "offset_hours": random.choice([0.5, 1, 2, 3]),
         "note_headline": random.choice(NOTE_HEADLINES),
         "note_body": random.choice(NOTE_BODIES),
-        "left": random.randint(50, 200),
-        "top": random.randint(40, 120),
-        "right": random.randint(1024, 1440),
-        "bottom": random.randint(700, 900),
+        "draft_prompt": random.choice(DRAFT_PROMPTS),
     }
     return template["body"].format(**params).strip() + "\n"
 
